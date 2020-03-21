@@ -13,6 +13,15 @@ class Collector:
         self._history = defaultdict(lambda: defaultdict(int))
         self.agents = {}
         self.history_df = None
+        self.max_infected = 1
+
+    @getattr
+    def max_infected(self):
+        pass
+
+    @setattr
+    def max_infected(self):
+        pass
 
     def log_step(self, step: int, agents: List[Agent]) -> int:
 

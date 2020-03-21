@@ -4,8 +4,8 @@
 We develop a simple epidemic spreading model inspired by Boltzmann kinetic equation. 
 The model has two main parameters which determine how the epidemic spreading 
 will propagate in a system of N agents. By providing a short analytical description, 
-we explain the intrinsic meaning of these parameters
-and investigate how they are interconnected with the spreading.
+we attempt to explain the intrinsic meaning of these parameters
+and investigate their connection with the spreading evolution.
 
 #### Problem formulation
 
@@ -49,7 +49,8 @@ The simulation starts with one infected agent and ends when there're no infected
 
    - Can the micro-parameters be "fitted" to real data (obtained from macro-parameters)?
    
-   - What determines when the exponential distribution will break
+   - What determines when the exponential distribution will stop?
    
    - What determines the total time of infection.
     
+   - How the maximal number of infected depends on the parameters alpha and beta

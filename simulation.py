@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import multiprocessing as mp
 from multiprocessing.pool import ThreadPool
+import time
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,18 @@ from agent import Agent
 from policy import Policy, MolecularPolicy
 from collector import Collector
 from visualization.plots import plot_history, area_plot
+
+
+def timeit(method):
+    # calculates the time of function execution
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        print('%r  %2.2f s' % (method.__name__, (te - ts)))
+        return result
+
+    return timed
 
 
 class Simulation:
@@ -51,7 +64,7 @@ class Simulation:
         return self.collector.history_as_df()
 
     @staticmethod
-    def save_history(df: pd.DataFrame, reuse: bool = True, prefix: str = ''):
+    def save_history(df: pd.DataFrame, prefix: str = ''):
         """ Save history in a csv file"""
 
         new_path = f'./data/simulations/{prefix}_{datetime.now().strftime("%m-%d-%Y__%H-%M-%S")}.csv'
@@ -101,39 +114,57 @@ class Simulation:
         self.spread_policy = spread_pol
 
 
-def smooth(sim: Simulation, n=20):
+@timeit
+def smooth(parameters, n=20):
 
     pool = ThreadPool(mp.cpu_count() - 1)
-    results = pool.starmap(sim.run, [() for _ in range(n)])
+    results = pool.map(simple_run, [parameters for _ in range(n)])
 
-    mean = pd.concat(results).mean(level=0)
-    history_path = sim.save_history(mean, prefix='mean')
-    sim.plot_history(history_path)
+    max_shape = max([df.shape[0] for df in results])
+    new_results = []
+    for df in results:
+        if df.shape[0] < max_shape:
+            ext = pd.concat([df.loc[[df.shape[0] - 1]] for _ in range(max_shape - df.shape[0])], ignore_index=True)
+            new_results.append(pd.concat([df, ext], ignore_index=True))
+        else:
+            new_results.append(df)
+
+    for df in new_results:
+        df.loc[:, 'step'] = np.arange(max_shape)
+
+    mean = sum(new_results) / len(new_results)
+
+    history_path = Simulation.save_history(mean, prefix=f'mean_{n}')
+    Simulation.plot_history(history_path)
 
 
-def simple_run(sim):
+def simple_run(params: dict, plot=False):
 
-    history = sim.run()
-    history_path = sim.save_history(history)
-    sim.plot_history(history_path)
+    simulation = Simulation(beta=params['beta'])
+    simulation.set_up(n_agents=params['n_agents'],
+                      mean_recovery=params['mean_recovery'],
+                      std_recovery=0.07 * params['mean_recovery'],
+                      death_factor=0.02,
+                      spread_factor=params['alpha'],
+                      p_immune=0.2,
+                      number_of_infected=1)
+
+    history = simulation.run()
+
+    if plot:
+        history_path = simulation.save_history(history)
+        simulation.plot_history(history_path)
+    return history
 
 
 if __name__ == '__main__':
 
-    n_agents = 1000
+    params = {
+        'n_agents': 3000,
+        'alpha': 0.05,
+        'beta': 100,
+        'mean_recovery': 40
+    }
 
-    beta = 100
-    mean_recovery = 40
-    sf = 0.05
-
-    simulation = Simulation(beta=beta)
-    simulation.set_up(n_agents=n_agents,
-                      mean_recovery=mean_recovery,
-                      std_recovery=6,
-                      death_factor=0.02,
-                      spread_factor=sf,  # proportionality between number of infected and probability to infect
-                      p_immune=0.2,  # percentage of immune citizens
-                      number_of_infected=1)
-
-    smooth(simulation, n=100)
-
+    smooth(n=1000, params=params)
+    # simple_run(params, plot=True)
