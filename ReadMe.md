@@ -41,9 +41,9 @@ Simulation starts with one infected agent and ends when there're no infected lef
 
 #### Simulation results:
 
-![GitHub Logo](data/area_plot/area_stack_mean_100_03-22-2020__23-20-47.png?raw=true) 
+![Smoothed simulation run](data/area_plot/area_stack_mean_100_03-22-2020__23-20-47.png?raw=true) 
      
-#### Open questions:
+#### Possible research vectors:
 
    - Can the micro-parameters be "fitted" to real data (obtained from macro-parameters)?
    
