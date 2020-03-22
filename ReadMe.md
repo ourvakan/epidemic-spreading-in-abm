@@ -22,28 +22,26 @@ We have a system of N agents, which can be in one of the 5 states:
     - DEAD
     - IMMUNE
     
+Let the probability that an agent gets infected be denoted as 
+<a href="https://www.codecogs.com/eqnedit.php?latex=p_i(c,&space;cl,&space;inf)" target="_blank"><img src="https://latex.codecogs.com/png.latex?p_i(c,&space;cl,&space;inf)" title="p_i(c, cl, inf)" /></a>
+.
+Assuming the infection spreads when infected agent is in contact with a susceptible one:
+
+<a href="https://www.codecogs.com/eqnedit.php?latex=p_i(c,&space;cl,&space;inf)&space;=&space;p(c&space;|&space;cl,&space;inf)&space;*&space;p(inf|cl)&space;*&space;p(cl)" target="_blank"><img src="https://latex.codecogs.com/png.latex?p_i(c,&space;cl,&space;inf)&space;=&space;p(c&space;|&space;cl,&space;inf)&space;*&space;p(inf|cl)&space;*&space;p(cl)" title="p_i(c, cl, inf) = p(c | cl, inf) * p(inf|cl) * p(cl)" /></a>
+
+We consider the first term a constant, the second term uniquely distributed,
+the last term, exponentially distributed. 
+
 At each step, according to the policy, 
-susceptible agents can get infected with a chosen mechanism
-if they are in contact with an infected agent. 
+susceptible agents can get infected according to the provided mechanism.
 An infected agent can either recover after several iteration steps or die.
 Immune agents neither can get infected nor propagate the infection.
+Simulation starts with one infected agent and ends when there're no infected left.
 
-The simulation starts with one infected agent and ends when there're no infected left.
-
-#### Probability spreading:
-
-= discrete time model
-
-= derive a probability for infection
-
-= find ```beta``` from microscopic parameters
 
 #### Simulation results:
 
-1. Different alpha
-
-2. Different beta
- 
+![GitHub Logo](data/area_plot/area_stack_mean_100_03-22-2020__23-20-47.png?raw=true) 
      
 #### Open questions:
 
@@ -54,3 +52,5 @@ The simulation starts with one infected agent and ends when there're no infected
    - What determines the total time of infection.
     
    - How the maximal number of infected depends on the parameters alpha and beta
+   
+   - Is there a relation between the maximum number of infected and number of recovered

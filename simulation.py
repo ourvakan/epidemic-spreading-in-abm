@@ -1,10 +1,9 @@
 from typing import List
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 import multiprocessing as mp
 from multiprocessing.pool import ThreadPool
-import time
+import logging
 
 import numpy as np
 import pandas as pd
@@ -14,18 +13,7 @@ from agent import Agent
 from policy import Policy, MolecularPolicy
 from collector import Collector
 from visualization.plots import plot_history, area_plot
-
-
-def timeit(method):
-    # calculates the time of function execution
-    def timed(*args, **kw):
-        ts = time.time()
-        result = method(*args, **kw)
-        te = time.time()
-        print('%r  %2.2f s' % (method.__name__, (te - ts)))
-        return result
-
-    return timed
+from utils.decorators import timeit
 
 
 class Simulation:
@@ -81,19 +69,13 @@ class Simulation:
 
         for agent in agents:
             if agent.state == 'INFECTED':
-                if agent.days_for_recovery > agent.days_infected:
+                if agent.days_infected < agent.days_for_recovery:
                     agent.days_infected += 1
                 else:
                     agent.state = 'DEAD' if agent.will_die_if_infected else 'RECOVERED'
 
-    def set_up(self,
-               n_agents=10000,
-               mean_recovery=200,
-               std_recovery=6,
-               death_factor=0.02,
-               spread_factor=0.1,  # coefficient of proportionality between number of infected and probability to infect
-               p_immune=0.3,  # percentage of immune citizens
-               number_of_infected=1):
+    def set_up(self, n_agents=10000, mean_recovery=200, std_recovery=6,
+               death_factor=0.02, spread_factor=0.1, p_immune=0.3, number_of_infected=1):
 
         expgraph = ExponentialGraph(n=n_agents)
         spread_pol = MolecularPolicy(spread_factor=spread_factor)
@@ -105,13 +87,23 @@ class Simulation:
                       for _ in range(n_agents)]
 
         # infiltrate the virus!
-        for _ in range(number_of_infected):
-            k = np.random.choice(len(all_agents))
+        infected = np.random.choice(len(all_agents), size=number_of_infected, replace=False)
+        for k in infected:
             all_agents[k].state = 'INFECTED'
 
         self.topology = expgraph
         self.agents = all_agents
         self.spread_policy = spread_pol
+
+
+def extend_history_df(df, new_shape):
+    if df.shape[0] < new_shape:
+        ext = pd.concat([df.loc[[df.shape[0] - 1]] for _ in range(new_shape - df.shape[0])], ignore_index=True)
+        new_df = pd.concat([df, ext], ignore_index=True)
+        new_df.loc[:, 'step'] = np.arange(new_shape)
+        return new_df
+    else:
+        return df
 
 
 @timeit
@@ -121,19 +113,9 @@ def smooth(parameters, n=20):
     results = pool.map(simple_run, [parameters for _ in range(n)])
 
     max_shape = max([df.shape[0] for df in results])
-    new_results = []
-    for df in results:
-        if df.shape[0] < max_shape:
-            ext = pd.concat([df.loc[[df.shape[0] - 1]] for _ in range(max_shape - df.shape[0])], ignore_index=True)
-            new_results.append(pd.concat([df, ext], ignore_index=True))
-        else:
-            new_results.append(df)
-
-    for df in new_results:
-        df.loc[:, 'step'] = np.arange(max_shape)
+    new_results = [extend_history_df(df, max_shape) for df in results]
 
     mean = sum(new_results) / len(new_results)
-
     history_path = Simulation.save_history(mean, prefix=f'mean_{n}')
     Simulation.plot_history(history_path)
 
@@ -147,7 +129,7 @@ def simple_run(params: dict, plot=False):
                       death_factor=0.02,
                       spread_factor=params['alpha'],
                       p_immune=0.2,
-                      number_of_infected=1)
+                      number_of_infected=params['number_of_infected'])
 
     history = simulation.run()
 
@@ -160,11 +142,13 @@ def simple_run(params: dict, plot=False):
 if __name__ == '__main__':
 
     params = {
-        'n_agents': 3000,
+        'n_agents': 100,
         'alpha': 0.05,
         'beta': 100,
-        'mean_recovery': 40
+        'mean_recovery': 40,
+        'number_of_infected': 1
     }
 
-    smooth(n=1000, params=params)
+    smooth(parameters=params, n=100)
+
     # simple_run(params, plot=True)
